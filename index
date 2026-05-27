@@ -1,0 +1,2387 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset='utf-8'> 
+    <title>Adam AI Dashboard v8.5 - Full Fix</title> 
+    <script src='https://cdn.plot.ly/plotly-2.30.0.min.js'></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> 
+    <style> 
+        :root { --bg: #f1f5f9; --card: #ffffff; --primary: #3b82f6; --success: #10b981; --minor: #f59e0b; --major: #ef4444; --text: #1e293b; } 
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; } 
+        .container { max-width: 1450px; margin: 0 auto; } 
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: var(--card); padding: 15px 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); } 
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; padding: 0 5px; } 
+        .nav-btn { padding: 10px 20px; border-radius: 8px; border: none; background: #e2e8f0; color: #64748b; font-weight: 700; cursor: pointer; transition: 0.3s; } 
+        .nav-btn.active { background: var(--primary); color: white; } 
+        .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } 
+        .date-inputs { display: flex; align-items: center; gap: 5px; background: #f1f5f9; padding: 5px 10px; border-radius: 8px; } 
+        .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px; } 
+        .kpi-card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; } 
+        .kpi-label { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; } 
+        .kpi-value { font-size: 28px; font-weight: 800; margin-top: 5px; } 
+        .kpi-trend { font-size: 11px; font-weight: 600; margin-top: 4px; } 
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; } 
+        .panel {
+    background: var(--card);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: visible;
+} 
+        h2 { margin: 0 0 15px 0; font-size: 13px; text-transform: uppercase; color: #64748b; font-weight: 800; display: flex; justify-content: space-between; } 
+        table { width: 100%; border-collapse: collapse; font-size: 12px; } 
+        th { text-align: left; background: #f8fafc; padding: 10px; border-bottom: 2px solid #e2e8f0; } 
+        td { padding: 10px; border-bottom: 1px solid #f1f5f9; } 
+        button, input { padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: 600; cursor: pointer; font-size: 13px; } 
+        .btn-primary { background: var(--primary); color: white; border: none; } 
+        .btn-outline { background: white; color: var(--text); } 
+        .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); } 
+        .btn-reset { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; font-size: 10px; padding: 4px 8px; border-radius: 4px; } 
+        .tag-st { background: #eff6ff; color: #3b82f6; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 5px; } 
+        .insight-box { padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #cbd5e1; background: #f8fafc; } 
+        .insight-critical { border-left-color: var(--major); background: #fff1f2; } 
+        .insight-warning { border-left-color: var(--minor); background: #fffbeb; } 
+        .insight-success { border-left-color: var(--success); background: #f0fdf4; } 
+        .insight-title { font-weight: 800; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; display: block; } 
+.plotly-graph-div {
+    width: 100% !important;
+}
+
+.link-item {
+    display: block;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.link-item:hover {
+    border-color: var(--primary);
+    background: #f8fafc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.link-title {
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.link-desc {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+        .log-summary-bar { background: #eff6ff; border: 1px solid #3b82f6; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
+        .log-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
+        .log-card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .log-header { margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        .log-date { background: var(--primary); color: white; padding: 4px 12px; border-radius: 6px; font-weight: 800; font-size: 13px; }
+        .log-section-title { font-size: 10px; text-transform: uppercase; font-weight: 800; margin-bottom: 8px; margin-top: 5px; letter-spacing: 0.5px; display: block; }
+        .log-content { font-size: 12px; white-space: pre-line; line-height: 1.5; color: #475569; overflow-wrap: anywhere;
+word-break: break-word;
+min-width: 0; }
+#n8n-alert-bar{
+    position:sticky;
+    top:0;
+    z-index:99999;
+    padding:12px 20px;
+    text-align:center;
+    font-weight:800;
+    font-size:14px;
+    border-bottom:2px solid rgba(255,255,255,.15);
+}
+
+.n8n-alert-hidden{
+    display:none;
+}
+
+.n8n-alert-critical{
+    background:#b91c1c;
+    color:white;
+}
+
+.n8n-alert-warning{
+    background:#d97706;
+    color:white;
+}
+
+.n8n-alert-ok{
+    background:#15803d;
+    color:white;
+}
+
+.n8n-monitor-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+}
+
+.n8n-monitor-card{
+    border:1px solid #e2e8f0;
+    border-left:5px solid #94a3b8;
+    border-radius:10px;
+    padding:14px;
+    background:white;
+}
+
+.n8n-monitor-card.critical{
+    border-left-color:#dc2626;
+}
+
+.n8n-monitor-card.warning{
+    border-left-color:#d97706;
+}
+
+.n8n-monitor-title{
+    font-size:13px;
+    font-weight:800;
+    margin-bottom:8px;
+}
+
+.n8n-monitor-meta{
+    font-size:12px;
+    color:#64748b;
+    line-height:1.5;
+}
+.incident-feed{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.incident-item{
+    border-left:5px solid #94a3b8;
+    background:white;
+    border-radius:10px;
+    padding:14px;
+    border:1px solid #e2e8f0;
+}
+
+.incident-item.active{
+    border-left-color:#dc2626;
+    background:#fef2f2;
+}
+
+.incident-item.resolved{
+    border-left-color:#16a34a;
+}
+
+.incident-title{
+    font-weight:800;
+    margin-bottom:6px;
+}
+
+.incident-meta{
+    font-size:12px;
+    color:#64748b;
+    line-height:1.5;
+}
+#n8n-alert-bar{
+    cursor:pointer;
+    transition:0.2s;
+}
+
+#n8n-alert-bar:hover{
+    opacity:0.92;
+}
+.errors-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.error-card {
+    background: var(--card);
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-left: 5px solid var(--major);
+}
+.error-card.top-failing {
+    border-left-color: var(--minor);
+}
+.error-card h4 {
+    margin: 0 0 5px 0;
+    font-size: 0.85rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.error-card .value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--text);
+}
+.errors-controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+    background: var(--card);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    align-items: center;
+    flex-wrap: wrap;
+}
+.errors-controls input, .errors-controls select {
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+    background: #fff;
+}
+.errors-controls input:focus, .errors-controls select:focus {
+    border-color: var(--primary);
+}
+.errors-table-container {
+    background: var(--card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.errors-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+.errors-table th, .errors-table td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+}
+.errors-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+}
+.errors-table tbody tr:hover {
+    background: #f1f5f9;
+}
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+.pagination-buttons {
+    display: flex;
+    gap: 8px;
+}
+.pagination-btn {
+    padding: 6px 12px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+.pagination-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.errors-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+@media (max-width: 950px) {
+    .errors-charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+        @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 1000px) { .log-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 700px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+        @media print { 
+            @page { size: A4 portrait; margin: 10mm; } 
+            .controls, #status, .btn-reset, .nav-tabs { display: none !important; } 
+            body { background: white; padding: 0; } 
+            .container { max-width: 100%; } 
+            .dashboard-grid { grid-template-columns: 1fr !important; } 
+            .panel { page-break-inside: avoid; border: 1px solid #eee !important; margin-bottom: 15px; } 
+        } 
+    </style> 
+</head> 
+<body> 
+<div id="n8n-alert-bar" class="n8n-alert-hidden" onclick="scrollToMonitoring()"></div>
+ <div class="container"> 
+    <div class="header"> 
+        <div> 
+            <h1 style="margin:0; font-size:22px; font-weight: 900;">ADAM <span style="color:var(--primary)">AI</span> <span id="filterDisplay" style="color:#94a3b8; font-weight: 400; font-size: 14px;"></span></h1> 
+            <div id="status" style="font-size:12px; color:#94a3b8; font-weight: bold;">Inicjalizacja...</div> 
+        </div> 
+        <div class="controls"> 
+            <div class="date-inputs"> 
+                <input type="date" id="dateFrom" onchange="applyFilters()"> 
+                <input type="date" id="dateTo" onchange="applyFilters()"> 
+            </div> 
+            <button onclick="setRange('today')" id="btnToday" class="btn-outline">Today</button> 
+            <button onclick="setRange('7')" id="btn7" class="btn-outline">7 Days</button> 
+            <button onclick="setRange('30')" id="btn30" class="btn-outline">30 Days</button> 
+            <button onclick="setRange('lastMonth')" id="btnLM" class="btn-outline">Last month</button> 
+            <button onclick="setRange('2026')" id="btn2026" class="btn-outline">2026</button> 
+            <button onclick="fetchData()" class="btn-primary">Sync</button> 
+        </div> 
+    </div> 
+
+    <div class="nav-tabs"> 
+    <button id="btn-tab-main" class="nav-btn active" onclick="switchTab('main')">📊 Main Dashboard</button> 
+    <button id="btn-tab-errors" class="nav-btn" onclick="switchTab('errors')">🚨 Issues Details</button>
+    <button id="btn-tab-insights" class="nav-btn" onclick="switchTab('insights')">🔍 Operational Insights</button> 
+    <button id="btn-tab-changelog" class="nav-btn" onclick="switchTab('changelog')">📋 Change Log</button> 
+    
+    <button id="btn-tab-links" class="nav-btn" onclick="switchTab('links')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px; display: inline-block; vertical-align: middle;">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        Important links
+    </button>
+</div>
+
+    <div id="tab-main"> 
+        <div class="kpi-grid" id="kpis"></div> 
+
+        <div class="dashboard-grid"> 
+            <div class="panel"> 
+                <h2>Success Rate by topic (Target 95%)</h2> 
+                <div id="mainBarChart" style="height: 350px;"></div> 
+            </div> 
+            <div class="panel"> 
+                <h2>performance table - click topic <button id="resetBtn" class="btn-reset" style="display:none;" onclick="resetFilter()">✕ Reset</button></h2> 
+                <div id="topicSummary"></div> 
+            </div> 
+        </div> 
+
+        <div class="dashboard-grid"> 
+            <div class="panel"> 
+                <h2>TnT - Success Rate by Topic (Target 95%)</h2> 
+                <div id="tntBarChart" style="height: 350px;"></div> 
+            </div> 
+            <div class="panel"> 
+                <h2>TnT - Performance Table - Click Topic</h2> 
+                <div id="tntTopicSummary"></div> 
+            </div> 
+        </div> 
+
+        <div class="dashboard-grid"> 
+            <div class="panel" style="grid-column: span 2;"> 
+                <h2 style="color: var(--primary);">SmallTopics: Success Rate % Deep-Dive</h2> 
+                <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;"> 
+                    <div id="smallTopicChart" style="height: 300px;"></div> 
+                    <div id="smallTopicTable"></div> 
+                </div> 
+            </div> 
+        </div> 
+
+        <div class="dashboard-grid"> 
+            <div class="panel" style="grid-column: span 2;"> 
+                <h2 style="color: var(--success);">Success Rate Trend over time (%)</h2> 
+                <div id="successRateChart" style="height: 300px;"></div> 
+            </div> 
+        </div> 
+
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr 1fr;"> 
+            <div class="panel"> 
+                <h2>Daily volume trend</h2> 
+                <div id="volumeChart" style="height: 300px;"></div> 
+            </div> 
+            <div class="panel"> 
+                <h2>market share</h2> 
+                <div id="marketPieChart" style="height: 300px;"></div> 
+            </div> 
+            <div class="panel"> 
+                <h2>Automation Mode</h2> 
+                <div id="automationModeChart" style="height: 300px;"></div> 
+            </div> 
+        </div>
+
+        <div class="panel" style="margin-bottom: 20px;"> 
+            <h2 style="color: var(--primary);">Automation Coverage by Topic</h2> 
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;"> 
+                <div id="automationCoverageChart" style="height: 350px;"></div> 
+                <div id="automationCoverageTable"></div> 
+            </div> 
+        </div>
+
+        <div class="panel" style="margin-bottom: 20px;"> 
+            <h2 style="color: #64748b;">Notes</h2> 
+            <div style="font-size: 13px; line-height: 1.6; color: #475569;">
+                Automation Mode follows the current date range and the selected topic filter.
+            </div>
+        </div>
+<div class="panel">
+    <h2 id="n8nMonitoringSection">
+        n8n Live Monitoring
+    </h2>
+
+    <div id="n8nMonitoringContainer" class="n8n-monitor-grid">
+        <div style="font-size:12px;color:#64748b;">
+            Loading monitoring data...
+        </div>
+    </div>
+</div>
+<div class="panel">
+    <h2>
+        Recent Incidents
+    </h2>
+
+    <div id="incidentHistoryContainer">
+        <div style="font-size:12px;color:#64748b;">
+            Loading incident history...
+        </div>
+    </div>
+</div>
+    </div> 
+<div id="tab-errors" class="tab-content" style="display: none;">
+    
+    <div class="errors-summary-cards">
+        <div class="error-card">
+            <h4>All recognized issues</h4>
+            <div id="err-stat-total" class="value">0</div>
+        </div>
+        <div class="error-card top-failing">
+            <h4>Most emergency Flow</h4>
+            <div id="err-stat-top-flow" class="value" style="font-size: 1.1rem; word-break: break-all; margin-top:4px;">-</div>
+        </div>
+        <div class="error-card">
+            <h4>Issues from the last 24h</h4>
+            <div id="err-stat-today" class="value">0</div>
+        </div>
+    </div>
+
+    <div class="errors-charts-grid">
+        <div id="chart-errors-by-day" style="background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-height: 380px;"></div>
+        <div id="chart-errors-by-flow" style="background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-height: 380px;"></div>
+    </div>
+
+    <div class="errors-controls">
+        <input type="text" id="err-search-flow" placeholder="Filter by status of the flow" oninput="onErrorsFilterChange()">
+        <select id="err-filter-status" onchange="onErrorsFilterChange()">
+            <option value="ALL">All statuses</option>
+            <option value="DOWN">Only active</option>
+            <option value="RECOVERED">Only recovered</option>
+        </select>
+        <button onclick="resetErrorsFilters()" style="padding: 10px 16px; background: #64748b; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">Reset filters</button>
+    </div>
+
+    <div class="errors-table-container">
+        <table class="errors-table">
+            <thead>
+                <tr>
+                    <th>Status of the issue</th>
+                    <th>Name of the Flow</th>
+                    <th>Started</th>
+                    <th>Recovered</th>
+                    <th>Original Status</th>
+                </tr>
+            </thead>
+            <tbody id="errors-table-body">
+                </tbody>
+        </table>
+        
+        <div class="pagination-controls">
+            <span id="err-pagination-info" style="color: #64748b; font-size: 0.9rem;">Showing 0-0 z 0</span>
+            <div class="pagination-buttons">
+                <button id="err-prev-page-btn" class="pagination-btn" onclick="changeErrorsPage(-1)">Previous</button>
+                <button id="err-next-page-btn" class="pagination-btn" onclick="changeErrorsPage(1)">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="tab-insights" style="display: none;"> 
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;"> 
+            <div class="panel"> 
+                <h2 style="color: var(--primary);">Smart Summary</h2> 
+                <div id="aiSummary" style="font-size: 14px; line-height: 1.6;">Generating summary...</div> 
+            </div> 
+            <div class="panel"> 
+                <h2 style="color: var(--primary);">
+                    Workday Predictor & Month Load
+                    <span style="font-size:10px; color:#94a3b8; font-weight:600;">
+                        (Last 30 days, Mon–Fri only)
+                    </span>
+                </h2>
+                <div id="workdayChart" style="height: 260px;"></div>
+                <div id="monthIntensity" style="margin-top: 15px; font-size: 14px; line-height: 1.6;">
+                    Analyzing patterns...
+                </div> 
+            </div> 
+        </div> 
+
+        <div class="panel" style="margin-bottom: 20px;"> 
+            <h2 style="color: var(--major);">Action Items & Alerts</h2> 
+            <div id="alertsContainer">No alerts found.</div> 
+        </div> 
+
+        <div class="panel"> 
+            <h2 style="color: #64748b;">Data Quality Audit (Google Sheets)</h2> 
+            <div id="dataAudit">Running audit...</div> 
+        </div> 
+    </div> 
+
+    <div id="tab-changelog" style="display: none;">
+        <div class="panel">
+            <div id="recentStatusSummary"></div>
+            <h2 style="color: var(--primary);">History of Updates & Meetings</h2>
+            <div id="changeLogContainer">Loading records...</div>
+        </div>
+    </div>
+
+    <div id="tab-links" style="display: none;">
+        <div class="card" style="max-width: 1000px; margin: 0 auto;">
+            <div style="display:flex; align-items:center; margin-bottom:25px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
+                <h2 style="margin:0; font-size:20px; color:#1e293b;">📌 Project Resources & Documentation</h2>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                
+                <a href="https://docs.google.com/document/d/1zIrbx2dtGjTddwp18df5YlgORIGvBd-FdDmYOLI3D0c/edit?tab=t.0" target="_blank" class="link-item">
+                    <div class="link-title">1. Adam AI guide</div>
+                    <div class="link-desc">Explanation of general Adam AI's workflow</div>
+                </a>
+
+                <a href="https://docs.google.com/document/d/10VoEu3q8ud3Wx6vENdrV1Va_v71fDGozqDHeqmCDqMQ/edit?tab=t.0" target="_blank" class="link-item">
+                    <div class="link-title">2. Checking procedures</div>
+                    <div class="link-desc">Every topic explained with possible outcomes + flows diagrams</div>
+                </a>
+
+                <a href="https://docs.google.com/spreadsheets/d/1w-nKjCSxIO_ueiVIw6NqP2YE_ECdLDG5uhB-Dwy-9eU/edit?gid=0#gid=0" target="_blank" class="link-item">
+                    <div class="link-title">3. Checklist</div>
+                    <div class="link-desc">Checklist for all Adam topics - each in a separate tab</div>
+                </a>
+
+                <a href="https://www.prologistics.info/react/logs/issue_logs/447523" target="_blank" class="link-item">
+                    <div class="link-title">4. Main Issue log</div>
+                    <div class="link-desc">Issue log with all flows listed</div>
+                </a>
+
+                <a href="https://www.prologistics.info/react/logs/issue_logs/448494/adam_ai_reporting_bugs" target="_blank" class="link-item">
+                    <div class="link-title">5. Issues / Bugs</div>
+                    <div class="link-desc">Issue log where all problems are being reported</div>
+                </a>
+
+                <a href="https://www.prologistics.info/react/logs/issue_logs/454516" target="_blank" class="link-item">
+                    <div class="link-title">6. Agents list</div>
+                    <div class="link-desc">Issue log with a list of agents that are responsible for checking Adam AI based on markets</div>
+                </a>
+
+            </div>
+        </div>
+    </div>
+ </div> 
+
+<script> 
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz3jHTZ8DOVoGI7KjygBm6qve64_qGf51TOi1BDyxLKNCGzmIizJxg85UG38Wv00J_j4mJw05JPLJW/pub?gid=952399576&single=true&output=csv';
+const LOGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz3jHTZ8DOVoGI7KjygBm6qve64_qGf51TOi1BDyxLKNCGzmIizJxg85UG38Wv00J_j4mJw05JPLJW/pub?gid=869726013&single=true&output=csv';
+const N8N_ALERTS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz3jHTZ8DOVoGI7KjygBm6qve64_qGf51TOi1BDyxLKNCGzmIizJxg85UG38Wv00J_j4mJw05JPLJW/pub?gid=2098644233&single=true&output=csv';
+const INCIDENT_HISTORY_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz3jHTZ8DOVoGI7KjygBm6qve64_qGf51TOi1BDyxLKNCGzmIizJxg85UG38Wv00J_j4mJw05JPLJW/pub?gid=167906543&single=true&output=csv';
+
+const TARGET_PCT = 95; 
+let RAW_DATA = []; 
+let RAW_LOGS = [];
+const MONITORING_TYPES = [
+    'CONTROL',
+    'FLOW_NOT_WORKING',
+    'FLOW_WORKING',
+    'MANY_ERRORS',
+    'MONITORING_DOWN'
+];
+let RAW_N8N_ALERTS = [];
+let RAW_INCIDENT_HISTORY = [];
+let SELECTED_TOPIC = null; 
+
+function normalizeMode(value) {
+    const s = String(value ?? '').trim().toLowerCase();
+    if (!s) return 'Unknown';
+    if (s === 'automated') return 'Automated';
+    if (s === 'draft') return 'Draft';
+    return 'Unknown';
+}
+
+window.onload = () => {
+    fetchData();
+    setTimeout(() => setRange('7'), 500);
+};
+
+function switchTab(tab) { 
+    document.getElementById('tab-main').style.display = tab === 'main' ? 'block' : 'none'; 
+document.getElementById('tab-errors').style.display = tab === 'errors' ? 'block' : 'none'; 
+    document.getElementById('tab-insights').style.display = tab === 'insights' ? 'block' : 'none'; 
+    document.getElementById('tab-changelog').style.display = tab === 'changelog' ? 'block' : 'none'; 
+    document.getElementById('tab-links').style.display = tab === 'links' ? 'block' : 'none'; 
+
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    const activeBtn = document.getElementById('btn-tab-' + tab);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+}
+
+function setRange(type) { 
+    const to = new Date(); 
+    let from = new Date(); 
+
+    document.querySelectorAll('.controls .btn-outline').forEach(b => b.classList.remove('active')); 
+
+    if(type === 'today') { 
+        document.getElementById('btnToday').classList.add('active'); 
+    } 
+    else if(type === '7') { 
+        from.setDate(to.getDate() - 7); 
+        document.getElementById('btn7').classList.add('active'); 
+    } 
+    else if(type === '30') { 
+        from.setDate(to.getDate() - 30); 
+        document.getElementById('btn30').classList.add('active'); 
+    } 
+    else if(type === 'lastMonth') { 
+        from = new Date(to.getFullYear(), to.getMonth() - 1, 1); 
+        document.getElementById('dateTo').value = new Date(to.getFullYear(), to.getMonth(), 0).toISOString().split('T')[0]; 
+        document.getElementById('btnLM').classList.add('active'); 
+    } 
+    else if(type === '2026') { 
+        from = new Date(2026, 0, 1); 
+        document.getElementById('btn2026').classList.add('active'); 
+    } 
+
+    const offset = to.getTimezoneOffset() * 60000;
+    const localFrom = new Date(from.getTime() - offset).toISOString().split('T')[0];
+    const localTo = new Date(to.getTime() - offset).toISOString().split('T')[0];
+
+    document.getElementById('dateFrom').value = localFrom; 
+
+    if(type !== 'lastMonth') {
+        document.getElementById('dateTo').value = localTo;
+    }
+
+    if(RAW_DATA.length > 0) {
+        applyFilters(); 
+    }
+} 
+
+function formatToDMY(isoStr) { 
+    if (!isoStr) return '';
+    const parts = isoStr.split('-'); 
+    return `${parts[2]}/${parts[1]}/${parts[0]}`; 
+} 
+
+function fetchData() { 
+    document.getElementById('status').innerText = "Fetching data..."; 
+    const ts = new Date().getTime();
+
+    Papa.parse(CSV_URL + "&t=" + ts, { 
+        download: true,
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        transformHeader: h => String(h).trim(),
+        complete: (results) => { 
+
+            RAW_DATA = results.data.map((row, index) => { 
+
+                const rawDate = row.Data ?? row.data ?? row.Date ?? row["Data "] ?? row[" Date"] ?? null;
+                const topicNorm = String(row.Topic ?? row.Temat ?? "").trim();
+                const marketNorm = String(row.Market ?? row.Kraj ?? "").trim();
+                const smallTopicNorm = String(row.SmallTopic ?? row.Subtopic ?? "").trim();
+                const modeNorm = normalizeMode(row.Mode ?? row.mode ?? row["Mode "] ?? row[" Mode"]);
+
+                let dObj = null;
+
+                if (rawDate) {
+                    if(typeof rawDate === 'string' && rawDate.includes('/')) { 
+                        const p = rawDate.split('/'); 
+                        dObj = new Date(p[2], p[1]-1, p[0]); 
+                    } else { 
+                        dObj = new Date(rawDate); 
+                    }
+
+                    dObj.setHours(0,0,0,0);
+
+                    if (isNaN(dObj.getTime())) {
+                        dObj = null;
+                    }
+                }
+
+                const yyyy = dObj ? dObj.getFullYear() : null;
+                const mm = dObj ? String(dObj.getMonth() + 1).padStart(2, '0') : null;
+                const dd = dObj ? String(dObj.getDate()).padStart(2, '0') : null;
+                const isoDate = dObj ? `${yyyy}-${mm}-${dd}` : null; 
+
+                const sourceSheetGuess =
+                    topicNorm.toLowerCase() === "smalltopics" ? "Check SmallTopics" :
+                    topicNorm.toLowerCase() === "damage" ? "Check Damage" :
+                    topicNorm.toLowerCase() === "return" ? "Check RTR" :
+                    topicNorm.toLowerCase() === "invoice request" ? "Check Invoice" :
+                    topicNorm.toLowerCase() === "address change" ? "Check Address" :
+                    topicNorm.toLowerCase() === "wismo" ? "Check" :
+                    null;
+
+                const sourceSheet =
+                    String(
+                        row.SourceSheet ??
+                        row.sourceSheet ??
+                        sourceSheetGuess ??
+                        "Unknown Source"
+                    ).trim();
+
+                const sourceRow =
+                    Number(
+                        row.SourceRow ??
+                        row.sourceRow ??
+                        row.RowNumber ??
+                        row.rowNumber ??
+                        0
+                    ) || null;
+
+                return {
+                    dateObj: dObj,
+                    isoDate: isoDate,
+                    Data: isoDate ? formatToDMY(isoDate) : null,
+                    rawDate: rawDate,
+                    Sukces: row.Sukces || row.Success,
+                    Market: marketNorm || null,
+                    Topic: topicNorm || null,
+                    SmallTopic: smallTopicNorm || null,
+                    Mode: modeNorm,
+                    SourceSheet: sourceSheet,
+                    SourceRow: sourceRow,
+                    sourceHint: topicNorm || "NO_TOPIC_RAW",
+                    sourceSheetGuess: sourceSheetGuess,
+                    csvRowNumber: index + 2,
+                    rawRow: row,
+                    hasMissingDate: !dObj,
+                    hasMissingTopic: !topicNorm,
+                    hasMissingMarket: !marketNorm,
+                    recordId:
+                        `${sourceSheet}|` +
+                        `${sourceRow || "NO_ROW"}|` +
+                        `${topicNorm || "NO_TOPIC"}|` +
+                        `${marketNorm || "NO_MARKET"}|` +
+                        `${rawDate || "NO_DATE"}`
+                };
+            }); 
+
+            document.getElementById('status').innerText = "Last sync: " + new Date().toLocaleTimeString(); 
+
+            fetchLogs(ts); 
+fetchN8nAlerts(ts);
+fetchIncidentHistory(ts);
+            applyFilters(); 
+        } 
+    }); 
+} 
+
+function fetchLogs(ts) {
+    Papa.parse(LOGS_URL + "&t=" + ts, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => { 
+            RAW_LOGS = results.data; 
+            renderChangeLog(); 
+        }
+    });
+}
+
+function fetchN8nAlerts(ts) {
+
+    Papa.parse(N8N_ALERTS_URL + "&t=" + ts, {
+
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+
+        complete: (results) => {
+
+            RAW_N8N_ALERTS = results.data;
+
+            renderN8nMonitoring();
+        }
+    });
+}
+
+function renderChangeLog() {
+
+    const container = document.getElementById('changeLogContainer');
+    const summaryDiv = document.getElementById('recentStatusSummary');
+
+    if(!container) return;
+
+    const last7Days = new Date(); 
+    last7Days.setDate(last7Days.getDate() - 7);
+
+    const recentData = RAW_DATA.filter(r => r.dateObj >= last7Days);
+
+    const total = recentData.length;
+    const ok = recentData.filter(r => String(r.Sukces || "").toLowerCase().trim() === 'yes').length;
+    const rate = total > 0 ? ((ok / total) * 100).toFixed(1) : 0;
+
+    const color = rate >= TARGET_PCT ? 'var(--success)' : (rate >= 90 ? 'var(--minor)' : 'var(--major)');
+
+    summaryDiv.innerHTML = `
+        <div class="log-summary-bar">
+            <div>
+                <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #64748b;">
+                    Recent Success Rate (7D)
+                </span>
+                <div style="font-size: 24px; font-weight: 900; color: ${color};">
+                    ${rate}%
+                </div>
+            </div>
+            <div style="font-size: 12px; color: #64748b; line-height: 1.4;">
+                Historical records and meeting notes.
+            </div>
+        </div>`;
+
+    if (RAW_LOGS.length === 0) {
+        container.innerHTML = "No records found in Change Log sheet.";
+        return;
+    }
+
+const businessLogs = RAW_LOGS.filter(log => {
+
+    const updates =
+        String(log.Updates || '').trim();
+
+    const issues =
+        String(log.Issues || '').trim();
+
+    const topics =
+        String(log['Topics to discuss'] || '').trim();
+
+    const nextSteps =
+        String(log.NextSteps || '').trim();
+
+    const combined =
+        `${updates} ${issues} ${topics} ${nextSteps}`;
+
+    return !MONITORING_TYPES.some(type =>
+        combined.includes(type)
+    );
+
+});
+
+const sortedLogs = [...businessLogs].sort((a, b) => {
+
+    const da = String(a.Date).split('/');
+    const db = String(b.Date).split('/');
+
+    return new Date(db[2], db[1]-1, db[0]) -
+           new Date(da[2], da[1]-1, da[0]);
+});
+
+    const formatText = (txt) => {
+        if (!txt) return '---';
+
+        let formatted = String(txt);
+
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+        const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+
+        formatted = formatted.replace(urlRegex, (url) => {
+            const href = url.startsWith('http') ? url : `https://${url}`;
+            return `<a href="${href}" target="_blank" style="color:var(--primary); text-decoration:underline;">${url}</a>`;
+        });
+
+        return formatted;
+    };
+
+    container.innerHTML = sortedLogs.map(log => `
+        <div class="log-card">
+            <div class="log-header">
+                <span class="log-date">${log.Date}</span>
+            </div>
+
+            <div class="log-grid">
+
+                <div>
+                    <div class="log-section-title" style="color:var(--primary)">Updates</div>
+                    <div class="log-content">${formatText(log.Updates)}</div>
+                </div>
+
+                <div>
+                    <div class="log-section-title" style="color:var(--major)">Issues</div>
+                    <div class="log-content">${formatText(log.Issues)}</div>
+                </div>
+
+                <div>
+                    <div class="log-section-title" style="color:var(--minor)">Topics to discuss</div>
+                    <div class="log-content">${formatText(log['Topics to discuss'])}</div>
+                </div>
+
+                <div>
+                    <div class="log-section-title" style="color:var(--success)">Next Steps</div>
+                    <div class="log-content">${formatText(log.NextSteps)}</div>
+                </div>
+
+            </div>
+        </div>
+    `).join('');
+}
+
+function calculateStats(data) { 
+
+    return data.reduce((acc, row) => { 
+
+        acc.total++; 
+
+        const s = String(row.Sukces || "").toLowerCase().trim(); 
+        const isOk = (s === 'yes' || s === '1' || s === 'true'); 
+
+        if (isOk) acc.ok++; 
+        else if (s.includes('minor')) acc.minor++; 
+        else if (s.includes('major')) acc.major++; 
+
+        const t = row.Topic || "Inne"; 
+
+        if (!acc.tStats[t]) {
+            acc.tStats[t] = { total: 0, ok: 0 };
+        }
+
+        acc.tStats[t].total++; 
+
+        if (isOk) {
+            acc.tStats[t].ok++; 
+        }
+
+        const m = row.Market || "N/A"; 
+
+        if (!acc.mStats[m]) {
+            acc.mStats[m] = { total: 0, ok: 0 };
+        }
+
+        acc.mStats[m].total++; 
+
+        if (isOk) {
+            acc.mStats[m].ok++; 
+        }
+
+        const mode = row.Mode === 'Automated' ? 'Automated' : (row.Mode === 'Draft' ? 'Draft' : 'Unknown');
+
+        if (!acc.modeStats[mode]) {
+            acc.modeStats[mode] = { total: 0 };
+        }
+
+        acc.modeStats[mode].total++;
+
+        if (!acc.topicModeStats[t]) {
+            acc.topicModeStats[t] = { total: 0, automated: 0, draft: 0, unknown: 0 };
+        }
+
+        acc.topicModeStats[t].total++;
+        acc.topicModeStats[t][mode.toLowerCase()]++;
+
+        const dKey = row.isoDate; 
+
+        acc.trend[dKey] = (acc.trend[dKey] || 0) + 1; 
+
+        if (!acc.dailyOk[dKey]) {
+            acc.dailyOk[dKey] = 0; 
+        }
+
+        if (isOk) {
+            acc.dailyOk[dKey]++; 
+        }
+
+        return acc; 
+
+    }, { 
+        total: 0, 
+        ok: 0, 
+        minor: 0, 
+        major: 0, 
+        tStats: {}, 
+        mStats: {}, 
+        modeStats: { Automated: { total: 0 }, Draft: { total: 0 }, Unknown: { total: 0 } }, 
+        topicModeStats: {}, 
+        trend: {}, 
+        dailyOk: {} 
+    }); 
+}
+
+function applyFilters() { 
+
+    const fromInput = document.getElementById('dateFrom').value; 
+    const toInput = document.getElementById('dateTo').value; 
+        
+    if(!fromInput || !toInput || RAW_DATA.length === 0) return;
+
+    const from = new Date(fromInput); 
+    from.setHours(0,0,0,0); 
+        
+    const to = new Date(toInput); 
+    to.setHours(23,59,59,999); 
+
+    const diff = to.getTime() - from.getTime(); 
+    const prevFrom = new Date(from.getTime() - diff - 1); 
+    const prevTo = new Date(from.getTime() - 1); 
+
+    const currentFull = RAW_DATA.filter(r => r.dateObj && r.dateObj >= from && r.dateObj <= to); 
+    const prevFull = RAW_DATA.filter(r => r.dateObj && r.dateObj >= prevFrom && r.dateObj <= prevTo); 
+
+    const currentCore = currentFull.filter(r => !isTnTRow(r));
+    const prevCore = prevFull.filter(r => !isTnTRow(r));
+    const currentTnT = currentFull.filter(r => isTnTRow(r));
+    const prevTnT = prevFull.filter(r => isTnTRow(r));
+        
+    const curStats = calculateStats(
+        SELECTED_TOPIC ? currentCore.filter(r => r.Topic === SELECTED_TOPIC) : currentCore
+    ); 
+
+    const preStats = calculateStats(
+        SELECTED_TOPIC ? prevCore.filter(r => r.Topic === SELECTED_TOPIC) : prevCore
+    ); 
+        
+    document.getElementById('filterDisplay').innerText = SELECTED_TOPIC ? "/ " + SELECTED_TOPIC : ""; 
+    document.getElementById('resetBtn').style.display = SELECTED_TOPIC ? "inline-block" : "none"; 
+        
+    renderKPIs(curStats, preStats); 
+    renderCharts(curStats, currentFull);
+generateInsights(curStats, preStats, currentCore);
+}
+
+function renderKPIs(cur, pre) { 
+
+    const getRate = (s) => s.total > 0 ? (s.ok / s.total * 100) : 0; 
+
+    const curRate = getRate(cur); 
+    const preRate = getRate(pre); 
+    const rateDiff = (curRate - preRate).toFixed(1);
+
+    const curAutomation = cur.total > 0 ? ((cur.modeStats.Automated?.total || 0) / cur.total * 100) : 0;
+    const preAutomation = pre.total > 0 ? ((pre.modeStats.Automated?.total || 0) / pre.total * 100) : 0;
+    const automationDiff = (curAutomation - preAutomation).toFixed(1);
+        
+    const kpiSettings = [ 
+        { label: 'Volume', val: cur.total, trend: (pre.total === 0 ? 0 : ((cur.total - pre.total)/pre.total*100).toFixed(1)) + '%', isRate: false }, 
+        { label: 'Success Rate', val: curRate.toFixed(1), trend: (rateDiff > 0 ? '+' + rateDiff : rateDiff) + '%', unit: '%', isRate: true }, 
+        { label: 'Automation Rate', val: curAutomation.toFixed(1), trend: (automationDiff > 0 ? '+' + automationDiff : automationDiff) + '%', unit: '%', isRate: true }, 
+        { label: 'Minor mistakes', val: cur.minor, trend: (cur.minor - pre.minor), isRate: false, reverse: true }, 
+        { label: 'Major mistakes', val: cur.major, trend: (cur.major - pre.major), isRate: false, reverse: true } 
+    ]; 
+
+    document.getElementById('kpis').innerHTML = kpiSettings.map(k => { 
+
+        const trendValue = parseFloat(k.trend); 
+
+        let tColor = k.isRate 
+            ? (trendValue >= 0 ? 'var(--success)' : 'var(--major)') 
+            : (k.reverse ? (trendValue <= 0 ? 'var(--success)' : 'var(--major)') : '#64748b'); 
+
+        let mainColor = 'var(--text)'; 
+
+        if (k.isRate) {
+            const value = parseFloat(k.val);
+            mainColor = value >= TARGET_PCT ? 'var(--success)' : (value >= 90 ? 'var(--minor)' : 'var(--major)');
+        } 
+        else if (k.label === 'Minor mistakes') {
+            mainColor = 'var(--minor)';
+        } 
+        else if (k.label === 'Major mistakes') {
+            mainColor = 'var(--major)';
+        }
+
+        return `
+            <div class="kpi-card">
+                <div class="kpi-label">${k.label}</div>
+                <div class="kpi-value" style="color:${mainColor}">
+                    ${k.val}${k.unit || ''}
+                </div>
+                <div class="kpi-trend" style="color:${tColor}">
+                    ${parseFloat(k.trend) >= 0 && !k.isRate ? '+' + k.trend : k.trend} vs prev.
+                </div>
+            </div>
+        `; 
+
+    }).join(''); 
+}
+
+function generateInsights(cur, pre, rawCurrent) { 
+
+    const curRate = cur.total > 0 ? (cur.ok / cur.total * 100).toFixed(1) : 0; 
+    const curAutomation = cur.total > 0 ? (((cur.modeStats.Automated?.total || 0) / cur.total) * 100).toFixed(1) : 0;
+    const topMarket = Object.entries(cur.mStats).sort((a,b) => b[1].total - a[1].total)[0] || ["N/A", {total:0}]; 
+        
+    document.getElementById('aiSummary').innerHTML = `
+        <p>Overall performance is at <b>${curRate}%</b> with a total volume of <b>${cur.total}</b> tickets.</p>
+        <p>The most active market is <b>${topMarket[0]}</b> representing ${cur.total > 0 ? ((topMarket[1].total/cur.total)*100).toFixed(0) : 0}% of the workload.</p>
+        <p>Automation rate in the current selection is <b>${curAutomation}%</b>.</p>
+        <p>${curRate >= TARGET_PCT ? "Performance is currently meeting the 95% target." : "Performance is currently below the desired 95% threshold."}</p>
+    `; 
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const weekdayCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+    RAW_DATA.forEach(r => {
+        if (!r.dateObj) return;
+
+        const d = r.dateObj.getDay();
+
+        if (r.dateObj >= thirtyDaysAgo && d >= 1 && d <= 5) {
+            weekdayCounts[d]++;
+        }
+    });
+
+    const dayNames = {
+        1: "Monday",
+        2: "Tuesday",
+        3: "Wednesday",
+        4: "Thursday",
+        5: "Friday"
+    };
+
+    let workloadArray = Object.entries(weekdayCounts).map(([d, count]) => ({
+        day: dayNames[d],
+        value: count
+    }));
+
+    workloadArray.sort((a, b) => b.value - a.value);
+
+    const total = workloadArray.reduce((a, b) => a + b.value, 0) || 1;
+
+    workloadArray = workloadArray.map(d => ({
+        ...d,
+        pct: +(d.value / total * 100).toFixed(1)
+    }));
+
+    const maxVal = workloadArray.length
+        ? Math.max(...workloadArray.map(d => d.pct))
+        : 0;
+
+    const colors = workloadArray.map(d =>
+        d.pct === maxVal ? "#6366f1" : "#94a3b8"
+    );
+
+    if (!workloadArray.length) {
+        document.getElementById('workdayChart').innerHTML =
+            "No data for workday analysis";
+    } 
+    else {
+
+        Plotly.newPlot('workdayChart', [{
+            type: 'bar',
+            orientation: 'h',
+            x: workloadArray.map(d => d.pct),
+            y: workloadArray.map(d => d.day),
+            text: workloadArray.map(d => d.pct + "%"),
+            textposition: 'auto',
+            marker: {
+                color: colors
+            }
+        }], {
+            margin: { t: 10, l: 90, r: 20, b: 40 },
+            xaxis: {
+                title: "% workload",
+                range: [0, Math.max(...workloadArray.map(d => d.pct)) * 1.2],
+                automargin: true,
+                tickfont: { size: 11 }
+            },
+            yaxis: {
+                automargin: true,
+                tickfont: { size: 11 }
+            },
+            showlegend: false
+        });
+    }
+
+    const now = new Date();
+
+    const curMonthWorkdays = RAW_DATA.filter(r =>
+        r.dateObj &&
+        r.dateObj.getMonth() === now.getMonth() &&
+        r.dateObj.getFullYear() === now.getFullYear() &&
+        r.dateObj.getDay() >= 1 && r.dateObj.getDay() <= 5
+    );
+
+    const curMonthDays = new Set(curMonthWorkdays.map(r => r.isoDate)).size || 1;
+    const curMonthAvg = curMonthWorkdays.length / curMonthDays;
+
+    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const prevMonthWorkdays = RAW_DATA.filter(r =>
+        r.dateObj &&
+        r.dateObj.getMonth() === prevMonthDate.getMonth() &&
+        r.dateObj.getFullYear() === prevMonthDate.getFullYear() &&
+        r.dateObj.getDay() >= 1 && r.dateObj.getDay() <= 5
+    );
+
+    const prevMonthDays = new Set(prevMonthWorkdays.map(r => r.isoDate)).size || 1;
+    const prevMonthAvg = prevMonthWorkdays.length / prevMonthDays;
+
+    const momDiff = prevMonthAvg > 0
+        ? (((curMonthAvg - prevMonthAvg) / prevMonthAvg) * 100).toFixed(1)
+        : 0;
+
+    document.getElementById('monthIntensity').innerHTML = `
+        <div class="insight-box" style="background:#f0f9ff; border-left-color:#0ea5e9;">
+            <p style="margin:0; font-size:11px; color:#6b7280; text-transform:uppercase; font-weight:bold;">
+                Monthly Intensity (Current vs Previous Month)
+            </p>
+            <p>
+                Current: <b>${curMonthAvg.toFixed(1)}</b> tkt/day<br>
+                Previous: <b>${prevMonthAvg.toFixed(1)}</b> tkt/day<br>
+                Change: <b style="color:${momDiff >= 0 ? 'var(--major)' : 'var(--success)'}">
+                    ${momDiff > 0 ? '+' : ''}${momDiff}%
+                </b>
+            </p>
+        </div>
+    `;
+
+    let alerts = []; 
+
+    Object.entries(cur.tStats).forEach(([t, s]) => { 
+        if((s.ok/s.total*100) < 85 && s.total > 5) {
+            alerts.push(`
+                <div class="insight-box insight-critical">
+                    <span class="insight-title">Critical Topic Drop</span>
+                    Topic "<b>${t}</b>" is underperforming.
+                </div>
+            `);
+        }
+    }); 
+
+    document.getElementById('alertsContainer').innerHTML = alerts.length > 0 
+        ? alerts.join('') 
+        : '<div class="insight-box insight-success">All systems stable.</div>'; 
+renderDataAudit(RAW_DATA);
+}
+
+function renderTnTCharts(tntData) {
+
+    const tntStats = calculateStats(tntData);
+
+    let chartData = Object.entries(tntStats.tStats);
+
+    chartData.sort((a, b) => b[1].total - a[1].total);
+
+    Plotly.newPlot('tntBarChart', [{ 
+        x: chartData.map(e => e[0]), 
+        y: chartData.map(e => ((e[1].ok / e[1].total) * 100).toFixed(1)), 
+        type: 'bar', 
+        text: chartData.map(e => ((e[1].ok / e[1].total) * 100).toFixed(1) + '%'), 
+        textposition: 'auto', 
+        hovertemplate:
+            '<b>%{x}</b><br>' +
+            'Success Rate: %{y}%<extra></extra>',
+        marker: { 
+            color: chartData.map(e => { 
+                const p = (e[1].ok / e[1].total) * 100; 
+                return p >= TARGET_PCT ? '#10b981' : (p >= 90 ? '#f59e0b' : '#ef4444'); 
+            }) 
+        } 
+    }], { 
+        margin: { t: 10, b: 40, l: 40, r: 10 }, 
+        shapes: [{ 
+            type: 'line', 
+            x0: -0.5, 
+            x1: chartData.length - 0.5, 
+            y0: TARGET_PCT, 
+            y1: TARGET_PCT, 
+            line: { color: 'black', dash: 'dot' } 
+        }] 
+    }, {
+        responsive: true
+    });
+
+    let tableHtml = '<table><tr><th>Category</th><th>Vol</th><th>Success %</th></tr>'; 
+
+    Object.entries(tntStats.tStats)
+        .sort((a, b) => b[1].total - a[1].total)
+        .forEach(([name, d]) => { 
+
+            const p = ((d.ok / d.total) * 100).toFixed(1); 
+
+            let clr = p >= TARGET_PCT 
+                ? '#10b981' 
+                : (p >= 90 ? '#f59e0b' : '#ef4444'); 
+
+            tableHtml += `
+                <tr style="cursor:pointer">
+                    <td><b>${name}</b></td>
+                    <td>${d.total}</td>
+                    <td style="color:${clr}">
+                        <b>${p}%</b>
+                    </td>
+                </tr>
+            `; 
+        }); 
+
+    document.getElementById('tntTopicSummary').innerHTML = tableHtml + '</table>';
+
+    setTimeout(() => {
+        const el = document.getElementById('tntBarChart');
+        if (el) Plotly.Plots.resize(el);
+    }, 100);
+}
+
+function renderCharts(stats, allDateData) { 
+
+    let chartData = SELECTED_TOPIC ? Object.entries(stats.mStats) : Object.entries(stats.tStats); 
+
+    chartData.sort((a, b) => b[1].total - a[1].total); 
+
+    Plotly.newPlot('mainBarChart', [{ 
+        x: chartData.map(e => e[0]), 
+        y: chartData.map(e => ((e[1].ok / e[1].total) * 100).toFixed(1)), 
+        type: 'bar', 
+        text: chartData.map(e => ((e[1].ok / e[1].total) * 100).toFixed(1) + '%'), 
+        textposition: 'auto', 
+        hovertemplate:
+            '<b>%{x}</b><br>' +
+            'Success Rate: %{y}%<extra></extra>',
+        marker: { 
+            color: chartData.map(e => { 
+                const p = (e[1].ok / e[1].total) * 100; 
+                return p >= TARGET_PCT ? '#10b981' : (p >= 90 ? '#f59e0b' : '#ef4444'); 
+            }) 
+        } 
+    }], { 
+        margin: { t: 10, b: 40, l: 40, r: 10 }, 
+        shapes: [{ 
+            type: 'line', 
+            x0: -0.5, 
+            x1: chartData.length - 0.5, 
+            y0: TARGET_PCT, 
+            y1: TARGET_PCT, 
+            line: { color: 'black', dash: 'dot' } 
+        }] 
+    }, {
+        responsive: true
+    }); 
+
+    let tableHtml = '<table><tr><th>Category</th><th>Vol</th><th>Success %</th></tr>'; 
+
+    Object.entries(stats.tStats)
+        .sort((a, b) => b[1].total - a[1].total)
+        .forEach(([name, d]) => { 
+
+            const p = ((d.ok / d.total) * 100).toFixed(1); 
+
+            let clr = p >= TARGET_PCT 
+                ? '#10b981' 
+                : (p >= 90 ? '#f59e0b' : '#ef4444'); 
+
+            tableHtml += `
+                <tr style="cursor:pointer" onclick="SELECTED_TOPIC='${name}'; applyFilters();">
+                    <td><b>${name}</b></td>
+                    <td>${d.total}</td>
+                    <td style="color:${clr}">
+                        <b>${p}%</b>
+                    </td>
+                </tr>
+            `; 
+        }); 
+
+    document.getElementById('topicSummary').innerHTML = tableHtml + '</table>'; 
+
+    const tntData = allDateData.filter(r => {
+        const topic = String(r.Topic || '').trim().toLowerCase();
+        const smallTopic = String(r.SmallTopic || '').trim().toLowerCase();
+        const sourceSheet = String(r.SourceSheet || '').trim().toLowerCase();
+
+        return (
+            topic === 'tnt' ||
+            smallTopic === 'tnt' ||
+            sourceSheet.includes('tnt')
+        );
+    });
+
+    renderTnTCharts(tntData);
+
+    const automationCoverage = Object.entries(stats.topicModeStats || {})
+        .map(([topic, d]) => {
+            const total = d.total || 0;
+            const automated = d.automated || 0;
+            const draft = d.draft || 0;
+            const automatedPct = total > 0 ? (automated / total) * 100 : 0;
+            const draftPct = total > 0 ? (draft / total) * 100 : 0;
+
+            return { 
+                topic, 
+                total, 
+                automated, 
+                draft, 
+                automatedPct, 
+                draftPct 
+            };
+        })
+        .filter(d => d.total > 0)
+        .sort((a, b) => b.automatedPct - a.automatedPct || b.total - a.total || a.topic.localeCompare(b.topic));
+
+    const coverageChartEl = document.getElementById('automationCoverageChart');
+    const coverageTableEl = document.getElementById('automationCoverageTable');
+
+    if (!automationCoverage.length) {
+
+        if (coverageChartEl) {
+            coverageChartEl.innerHTML = 'No data available';
+        }
+
+        if (coverageTableEl) {
+            coverageTableEl.innerHTML = '<div class="insight-box insight-success">No automation mode data available.</div>';
+        }
+
+    } 
+    else {
+
+        const customPayload = automationCoverage.map(d => [
+            d.topic, 
+            d.automated, 
+            d.draft, 
+            d.automatedPct, 
+            d.total
+        ]);
+
+        Plotly.newPlot('automationCoverageChart', [
+            {
+                type: 'bar',
+                orientation: 'h',
+                y: automationCoverage.map(d => d.topic),
+                x: automationCoverage.map(d => d.automatedPct),
+                name: 'Automated',
+                marker: { color: '#10b981' },
+                customdata: customPayload,
+                hovertemplate:
+                    '<b>%{customdata[0]}</b><br>' +
+                    'Automated: %{customdata[1]}<br>' +
+                    'Draft: %{customdata[2]}<br>' +
+                    'Automation: %{customdata[3]:.1f}%<extra></extra>'
+            },
+            {
+                type: 'bar',
+                orientation: 'h',
+                y: automationCoverage.map(d => d.topic),
+                x: automationCoverage.map(d => d.draftPct),
+                name: 'Draft',
+                marker: { color: '#94a3b8' },
+                customdata: customPayload,
+                hovertemplate:
+                    '<b>%{customdata[0]}</b><br>' +
+                    'Automated: %{customdata[1]}<br>' +
+                    'Draft: %{customdata[2]}<br>' +
+                    'Automation: %{customdata[3]:.1f}%<extra></extra>'
+            }
+        ], {
+            margin: { t: 10, b: 40, l: 120, r: 20 },
+            barmode: 'stack',
+            xaxis: {
+                title: 'Automation split (%)',
+                range: [0, 100],
+                automargin: true,
+                tickfont: { size: 11 }
+            },
+            yaxis: {
+                automargin: true,
+                tickfont: { size: 11 }
+            },
+            legend: { orientation: 'h' }
+        }, {
+            responsive: true
+        });
+
+        let automationTableHtml = '<table><tr><th>Topic</th><th>Total Volume</th><th>Automated</th><th>Draft</th><th>Automation %</th></tr>'; 
+
+        automationCoverage.forEach(({ topic, total, automated, draft, automatedPct }) => { 
+
+            const clr = automatedPct >= TARGET_PCT 
+                ? '#10b981' 
+                : (automatedPct >= 90 ? '#f59e0b' : '#ef4444'); 
+
+            automationTableHtml += `
+                <tr style="cursor:pointer" onclick="SELECTED_TOPIC=${JSON.stringify(topic)}; applyFilters();">
+                    <td><b>${topic}</b></td>
+                    <td>${total}</td>
+                    <td>${automated}</td>
+                    <td>${draft}</td>
+                    <td style="color:${clr}">
+                        <b>${automatedPct.toFixed(1)}%</b>
+                    </td>
+                </tr>
+            `;
+        }); 
+
+        automationTableHtml += '</table>'; 
+
+        coverageTableEl.innerHTML = automationTableHtml;
+    }
+
+    const stStats = allDateData
+        .filter(r => r.Topic === 'SmallTopics')
+        .reduce((acc, row) => { 
+
+            const st = row.SmallTopic || "Niezdefiniowane"; 
+
+            if (!acc[st]) {
+                acc[st] = { total: 0, ok: 0 }; 
+            }
+
+            acc[st].total++; 
+
+            if (String(row.Sukces).toLowerCase().trim() === 'yes') {
+                acc[st].ok++; 
+            }
+
+            return acc; 
+
+        }, {}); 
+
+    const stArray = Object.entries(stStats).sort((a, b) => b[1].total - a[1].total); 
+
+    let stTableHtml = '<table><tr><th>Subtopic</th><th>Vol</th><th>Rate %</th></tr>'; 
+
+    stArray.forEach(([name, d]) => { 
+
+        const p = ((d.ok / d.total) * 100).toFixed(1); 
+
+        const clr = p >= TARGET_PCT 
+            ? '#10b981' 
+            : (p >= 90 ? '#f59e0b' : '#ef4444');
+
+        stTableHtml += `
+            <tr>
+                <td><span class="tag-st">ST</span> ${name}</td>
+                <td>${d.total}</td>
+                <td style="color:${clr}">
+                    <b>${p}%</b>
+                </td>
+            </tr>
+        `;
+    });
+
+    document.getElementById('smallTopicTable').innerHTML = stTableHtml;
+
+    Plotly.newPlot('smallTopicChart', [{
+        x: stArray.map(e => e[0]),
+        y: stArray.map(e => ((e[1].ok / e[1].total) * 100).toFixed(1)),
+        type: 'bar',
+        text: stArray.map(e => ((e[1].ok / e[1].total) * 100).toFixed(1) + '%'),
+        textposition: 'auto',
+        hovertemplate:
+            '<b>%{x}</b><br>' +
+            'Success Rate: %{y}%<extra></extra>',
+        marker: {
+            color: stArray.map(e => {
+                const p = (e[1].ok / e[1].total) * 100;
+                return p >= TARGET_PCT ? '#10b981' : (p >= 90 ? '#f59e0b' : '#ef4444');
+            })
+        }
+    }], {
+        margin: { t: 10, b: 80, l: 40, r: 10 },
+        shapes: [{
+            type: 'line',
+            x0: -0.5,
+            x1: stArray.length - 0.5,
+            y0: TARGET_PCT,
+            y1: TARGET_PCT,
+            line: { color: 'black', dash: 'dot' }
+        }]
+    }, {
+        responsive: true
+    });
+
+    const daysISO = Object.keys(stats.trend).sort(); 
+    const daysDMY = daysISO.map(d => formatToDMY(d)); 
+
+    Plotly.newPlot('volumeChart', [{ 
+        x: daysDMY, 
+        y: daysISO.map(d => stats.trend[d]), 
+        type: 'scatter', 
+        fill: 'tozeroy' 
+    }], { 
+        margin: { t: 10, b: 100, l: 40, r: 10 } 
+    }, {
+        responsive: true
+    }); 
+
+    const successTrendData = daysISO.map(d => { 
+        const vol = stats.trend[d] || 0; 
+        const ok = stats.dailyOk[d] || 0; 
+        return vol > 0 ? ((ok / vol) * 100).toFixed(1) : 0; 
+    }); 
+
+    Plotly.newPlot('successRateChart', [{ 
+        x: daysDMY, 
+        y: successTrendData, 
+        type: 'scatter', 
+        mode: 'lines+markers', 
+        line: { shape: 'spline', color: '#10b981' }, 
+        fill: 'tozeroy', 
+        fillcolor: 'rgba(16, 185, 129, 0.1)' 
+    }], { 
+        margin: { t: 10, b: 100, l: 40, r: 10 }, 
+        yaxis: { range: [0, 105] }, 
+        shapes: [{ 
+            type: 'line', 
+            x0: 0, 
+            x1: daysDMY.length, 
+            y0: TARGET_PCT, 
+            y1: TARGET_PCT, 
+            line: { color: 'rgba(0,0,0,0.3)', dash: 'dot' } 
+        }] 
+    }, {
+        responsive: true
+    }); 
+
+    const mPie = Object.entries(stats.mStats).sort((a, b) => b[1].total - a[1].total); 
+
+    Plotly.newPlot(
+        'marketPieChart',
+        [{
+            labels: mPie.map(e => e[0]),
+            values: mPie.map(e => e[1].total),
+            type: 'pie',
+            hole: 0.4,
+            automargin: true
+        }],
+        {
+            margin: { t: 20, b: 20, l: 20, r: 20 },
+            autosize: true
+        },
+        {
+            responsive: true
+        }
+    );
+
+    const automationValues = [
+        stats.modeStats?.Automated?.total || 0,
+        stats.modeStats?.Draft?.total || 0
+    ];
+
+    if (automationValues[0] + automationValues[1] === 0) {
+
+        document.getElementById('automationModeChart').innerHTML = "No data available";
+
+    } 
+    else {
+
+        Plotly.newPlot(
+            'automationModeChart',
+            [{
+                labels: ['Automated', 'Draft'],
+                values: automationValues,
+                type: 'pie',
+                hole: 0.4,
+                automargin: true
+            }],
+            {
+                margin: { t: 20, b: 20, l: 20, r: 20 },
+                autosize: true
+            },
+            {
+                responsive: true
+            }
+        );
+    }
+
+    setTimeout(() => {
+        [
+            'mainBarChart',
+            'tntBarChart',
+            'automationCoverageChart',
+            'smallTopicChart',
+            'volumeChart',
+            'successRateChart',
+            'marketPieChart',
+            'automationModeChart',
+            'workdayChart'
+        ].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                Plotly.Plots.resize(el);
+            }
+        });
+    }, 100);
+}
+
+function renderDataAudit(data) {
+    const issues = {
+        missingDate: [],
+        invalidDate: [],
+        missingTopic: [],
+        missingMarket: [],
+        missingSuccess: [],
+        invalidSuccess: [],
+        shifted: []
+    };
+
+    function normalizeSuccess(v) {
+        if (v === null || v === undefined) return null;
+        const s = String(v).trim().toLowerCase();
+        if (s === "") return null;
+        if (["yes", "y", "true", "1", "ok", "success"].includes(s)) return "YES";
+        if (["no", "n", "false", "0", "fail", "failed"].includes(s)) return "NO";
+        return "INVALID";
+    }
+
+    data.forEach(r => {
+        const loc = `${r.SourceSheet || "Unknown"} | row ${r.SourceRow || r.csvRowNumber}`;
+        const successNorm = normalizeSuccess(r.Sukces);
+
+        if (!r.rawDate || String(r.rawDate).trim() === "") {
+            issues.missingDate.push({ location: loc, details: `Topic: ${r.Topic || "EMPTY"} | Market: ${r.Market || "EMPTY"}` });
+        } else if (!r.dateObj || isNaN(r.dateObj.getTime())) {
+            issues.invalidDate.push({ location: loc, details: `rawDate: ${r.rawDate}` });
+        }
+
+        if (!r.Topic || String(r.Topic).trim() === "") {
+            issues.missingTopic.push({ location: loc, details: `Market: ${r.Market || "EMPTY"}` });
+        }
+
+        if (!r.Market || String(r.Market).trim() === "") {
+            issues.missingMarket.push({ location: loc, details: `Topic: ${r.Topic || "EMPTY"}` });
+        }
+
+        if (r.Sukces === null || r.Sukces === undefined || String(r.Sukces).trim() === "") {
+            issues.missingSuccess.push({ location: loc, details: `Topic: ${r.Topic || "EMPTY"} | Market: ${r.Market || "EMPTY"}` });
+        }
+
+        const hasCoreData =
+            (r.Topic && String(r.Topic).trim() !== "") ||
+            (r.Market && String(r.Market).trim() !== "");
+
+        const hasDate = !!r.dateObj;
+        const hasSuccessLike = successNorm === "YES" || successNorm === "NO";
+        const emptyCorePattern =
+            (!r.Topic || String(r.Topic).trim() === "") &&
+            (!r.Market || String(r.Market).trim() === "");
+
+        const suspiciousShift =
+            (hasDate && !hasCoreData && hasSuccessLike) ||
+            (emptyCorePattern && hasDate && hasSuccessLike);
+
+        if (suspiciousShift) {
+            issues.shifted.push({ location: loc, details: `Possible column shift (data misaligned)` });
+        }
+    });
+
+    const totalIssues =
+        issues.missingDate.length +
+        issues.invalidDate.length +
+        issues.missingTopic.length +
+        issues.missingMarket.length +
+        issues.missingSuccess.length +
+        issues.invalidSuccess.length +
+        issues.shifted.length;
+
+    const auditedBase = Math.max(data.length, 1);
+    const rawScore = 100 - ((totalIssues / auditedBase) * 100);
+    const integrityScore = totalIssues === 0 ? 100 : Math.max(0, Math.floor(rawScore));
+
+    function renderAuditSection(title, arr, color) {
+        if (!arr.length) {
+            return `
+                <div style="padding:10px;border:1px solid #dcfce7;background:#f0fdf4;border-radius:8px;margin-bottom:10px;">
+                    <b style="color:var(--success)">${title}</b>
+                    <div style="font-size:11px;margin-top:4px;">✅ No issues detected</div>
+                </div>
+            `;
+        }
+
+        return `
+            <div style="padding:10px;border:1px solid #e2e8f0;background:white;border-radius:8px;margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <b style="color:${color}">${title}</b>
+                    <span style="font-size:11px;font-weight:700;color:${color};">${arr.length}</span>
+                </div>
+                ${arr.slice(0,5).map(i => `
+                    <div style="font-size:11px;padding:6px 0;border-top:1px solid #f1f5f9;">
+                        <b>${i.location}</b><br>
+                        ${i.details}
+                    </div>
+                `).join('')}
+                ${arr.length > 5 ? `<div style="font-size:10px;color:#64748b;margin-top:5px;">+ ${arr.length - 5} more</div>` : ''}
+            </div>
+        `;
+    }
+
+    document.getElementById('dataAudit').innerHTML = `
+        <div>
+            <span style="font-size:11px;text-transform:uppercase;font-weight:800;color:#64748b;">Data Integrity Score</span>
+            <div style="font-size:24px;font-weight:900;color:${
+                integrityScore >= 98 ? 'var(--success)' :
+                integrityScore >= 90 ? 'var(--minor)' : 'var(--major)'
+            };">${integrityScore}%</div>
+        </div>
+
+        <div style="font-size:12px;color:#64748b;line-height:1.4;">
+            Audit validates: missing/invalid date, topic, market, success + safe shift detection.
+        </div>
+
+        ${renderAuditSection('Missing Date', issues.missingDate, 'var(--major)')}
+        ${renderAuditSection('Invalid Date', issues.invalidDate, 'var(--minor)')}
+        ${renderAuditSection('Missing Topic', issues.missingTopic, '#f59e0b')}
+        ${renderAuditSection('Missing Market', issues.missingMarket, '#3b82f6')}
+        ${renderAuditSection('Missing Success', issues.missingSuccess, '#f97316')}
+        ${renderAuditSection('Shifted Rows Suspected', issues.shifted, '#8b5cf6')}
+    `;
+}
+
+function isTnTRow(row) {
+
+    const topic = String(row.Topic || '').trim().toLowerCase();
+    const smallTopic = String(row.SmallTopic || '').trim().toLowerCase();
+    const sourceSheet = String(row.SourceSheet || '').trim().toLowerCase();
+
+    return (
+        topic === 'tnt' ||
+        smallTopic === 'tnt' ||
+        sourceSheet.includes('tnt')
+    );
+}
+
+function renderN8nMonitoring() {
+
+    const container = document.getElementById('n8nMonitoringContainer');
+    const alertBar = document.getElementById('n8n-alert-bar');
+
+    if (!container || !alertBar) return;
+
+    if (!RAW_N8N_ALERTS.length) {
+
+        container.innerHTML = `
+            <div style="font-size:12px;color:#64748b;">
+                No active monitoring alerts.
+            </div>
+        `;
+
+        alertBar.className = 'n8n-alert-ok';
+        alertBar.innerHTML = '🟢 All monitored flows operational';
+
+        return;
+    }
+
+    let criticalCount = 0;
+    let warningCount = 0;
+
+    container.innerHTML = RAW_N8N_ALERTS.map(row => {
+
+        const severity = String(row['Severity'] || '').toLowerCase();
+
+        if (severity === 'critical') criticalCount++;
+        if (severity === 'warning') warningCount++;
+
+        return `
+            <div class="n8n-monitor-card ${severity}">
+                <div class="n8n-monitor-title">
+                    ${row['Flow']}
+                </div>
+
+                <div class="n8n-monitor-meta">
+
+                    <b>Alert:</b>
+                    ${row['Alert Type']}
+                    <br>
+
+                    <b>Duration:</b>
+                    ${row['Duration Min']} min
+                    <br>
+
+                    <b>Error %:</b>
+                    ${row['Error %'] || '-'}
+                    <br>
+
+                    <b>Status:</b>
+                    ${row['Status']}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    alertBar.classList.remove(
+        'n8n-alert-hidden',
+        'n8n-alert-critical',
+        'n8n-alert-warning',
+        'n8n-alert-ok'
+    );
+
+    if (criticalCount > 0) {
+
+        alertBar.classList.add('n8n-alert-critical');
+
+        alertBar.innerHTML =
+            `🔴 ${criticalCount} critical monitoring alert(s) active`;
+
+    }
+    else if (warningCount > 0) {
+
+        alertBar.classList.add('n8n-alert-warning');
+
+        alertBar.innerHTML =
+            `🟠 ${warningCount} degraded flow(s) detected`;
+
+    }
+    else {
+
+        alertBar.classList.add('n8n-alert-ok');
+
+        alertBar.innerHTML =
+            `🟢 All monitored flows operational`;
+    }
+}
+
+function fetchIncidentHistory(ts) {
+
+    Papa.parse(INCIDENT_HISTORY_URL + "&t=" + ts, {
+
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+
+        complete: (results) => {
+
+            RAW_INCIDENT_HISTORY = results.data;
+
+            renderIncidentHistory();
+updateErrorsDashboardTab(RAW_INCIDENT_HISTORY);
+        }
+    });
+}
+
+function renderIncidentHistory() {
+
+    const container =
+        document.getElementById('incidentHistoryContainer');
+
+    if (!container) return;
+
+    if (!RAW_INCIDENT_HISTORY.length) {
+
+        container.innerHTML = `
+            <div style="font-size:12px;color:#64748b;">
+                No incidents found.
+            </div>
+        `;
+
+        return;
+    }
+
+    const parseDate = (str) => {
+
+    if (!str) return 0;
+
+    const [datePart, timePart] =
+        String(str).split(' ');
+
+    if (!datePart) return 0;
+
+    const parts = datePart.split('/');
+
+    if (parts.length !== 3) {
+        return new Date(str).getTime() || 0;
+    }
+
+    const [day, month, year] = parts;
+
+    const time =
+        timePart
+            ? timePart.split(':').map(Number)
+            : [0,0,0];
+
+    return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        time[0] || 0,
+        time[1] || 0,
+        time[2] || 0
+    ).getTime();
+};
+
+const sorted = [...RAW_INCIDENT_HISTORY]
+
+    .sort((a, b) => {
+
+        const aActive =
+            String(a.Status || '')
+            .toLowerCase() === 'active';
+
+        const bActive =
+            String(b.Status || '')
+            .toLowerCase() === 'active';
+
+        // ACTIVE always first
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+
+        // newest first
+        return (
+            parseDate(b.Started) -
+            parseDate(a.Started)
+        );
+
+    })
+
+    .slice(0, 20);
+
+    container.innerHTML = `
+        <div class="incident-feed">
+
+            ${sorted.map(row => {
+
+                const status =
+                    String(row.Status || '').toLowerCase();
+
+                const isActive =
+                    status === 'active';
+
+                return `
+                    <div class="incident-item ${status}">
+
+                        <div class="incident-title">
+
+                            ${isActive ? '🔴' : '🟢'}
+
+                            ${row.Flow}
+
+                            ${isActive ? 'DOWN' : 'RECOVERED'}
+
+                        </div>
+
+                        <div class="incident-meta">
+
+                            <b>Started:</b>
+                            ${row.Started}
+                            <br>
+
+                            <b>Recovered:</b>
+                            ${row.Recovered || 'ACTIVE'}
+                            <br>
+
+                            <b>Duration:</b>
+                            ${row['Duration Min']} min
+                            <br>
+
+                            <b>Status:</b>
+                            ${row.Status}
+
+                        </div>
+
+                    </div>
+                `;
+            }).join('')}
+
+        </div>
+    `;
+}
+
+function refreshDashboardData() {
+
+    const ts = Date.now();
+
+    document.getElementById('status').innerText =
+        "Last sync: " + new Date().toLocaleTimeString();
+
+    fetchData();
+}
+
+function resetFilter() { 
+    SELECTED_TOPIC = null; 
+    applyFilters(); 
+}
+
+// ============================================================================
+// LOGIKA DLA ZAKŁADKI BŁĘDÓW
+// ============================================================================
+let ERRORS_CURRENT_PAGE = 1;
+const ERRORS_PAGE_SIZE = 25; // Rozmiar strony w tabeli historii
+let globalRawErrorsData = [];
+let filteredErrorsData = [];
+
+function updateErrorsDashboardTab(parsedRows) {
+    let rowsCopy = parsedRows ? [...parsedRows] : [];
+    
+    // Pomocnicza funkcja parsująca datę w formacie DD/MM/RRRR HH:MM:SS lub ISO
+    const parseDateToMs = (str) => {
+        if (!str) return 0;
+        const [datePart, timePart] = String(str).split(' ');
+        if (!datePart) return 0;
+        const parts = datePart.split('/');
+        if (parts.length !== 3) {
+            return new Date(str).getTime() || 0;
+        }
+        const [day, month, year] = parts;
+        const time = timePart ? timePart.split(':').map(Number) : [0,0,0];
+        return new Date(
+            Number(year),
+            Number(month) - 1,
+            Number(day),
+            time[0] || 0,
+            time[1] || 0,
+            time[2] || 0
+        ).getTime();
+    };
+
+    // Sortowanie: od NAJNOWSZEJ daty (Started) do NAJSTARSZEJ
+    rowsCopy.sort((a, b) => {
+        return parseDateToMs(b.Started) - parseDateToMs(a.Started);
+    });
+
+    // Zapisanie posortowanych danych do zmiennej globalnej nowej zakładki
+    globalRawErrorsData = rowsCopy;
+    
+    // Uruchomienie filtrowania i renderowania widoków
+    applyErrorsFiltersAndRender();
+}
+
+function applyErrorsFiltersAndRender() {
+    const searchQuery = document.getElementById('err-search-flow').value.toLowerCase();
+    const statusFilter = document.getElementById('err-filter-status').value;
+
+    filteredErrorsData = globalRawErrorsData.filter(row => {
+        if (!row || !row.Flow) return false;
+        
+        const matchesSearch = row.Flow.toLowerCase().includes(searchQuery);
+        const isActive = !row.Recovered || row.Recovered.trim() === '' || row.Recovered === 'ACTIVE' || row.Status === 'DOWN';
+        
+        let matchesStatus = true;
+        if (statusFilter === 'DOWN') {
+            matchesStatus = isActive;
+        } else if (statusFilter === 'RECOVERED') {
+            matchesStatus = !isActive;
+        }
+        
+        return matchesSearch && matchesStatus;
+    });
+
+    renderErrorsKPIs();
+    renderErrorsCharts();
+    renderErrorsTable();
+}
+
+function renderErrorsKPIs() {
+    // 1. Suma awarii
+    document.getElementById('err-stat-total').innerText = globalRawErrorsData.length;
+
+    // 2. Najbardziej awaryjne Flow
+    const flowCounts = {};
+    let maxCount = 0;
+    let topFlow = '-';
+
+    globalRawErrorsData.forEach(row => {
+        if (row && row.Flow) {
+            flowCounts[row.Flow] = (flowCounts[row.Flow] || 0) + 1;
+            if (flowCounts[row.Flow] > maxCount) {
+                maxCount = flowCounts[row.Flow];
+                topFlow = row.Flow;
+            }
+        }
+    });
+    document.getElementById('err-stat-top-flow').innerText = maxCount > 0 ? `${topFlow} (${maxCount}x)` : '-';
+
+    // 3. Awarie z ostatnich 24h (POPRAWIONE)
+    const now = Date.now();
+    const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+    let recentErrorsCount = 0;
+
+    // Pomocnicza funkcja do parsująca datę z formatu DD/MM/RRRR HH:MM:SS
+    const parseDateToMs = (str) => {
+        if (!str) return 0;
+        const [datePart, timePart] = String(str).split(' ');
+        if (!datePart) return 0;
+        const parts = datePart.split('/');
+        if (parts.length !== 3) {
+            return new Date(str).getTime() || 0;
+        }
+        const [day, month, year] = parts;
+        const time = timePart ? timePart.split(':').map(Number) : [0,0,0];
+        return new Date(
+            Number(year),
+            Number(month) - 1,
+            Number(day),
+            time[0] || 0,
+            time[1] || 0,
+            time[2] || 0
+        ).getTime();
+    };
+
+    globalRawErrorsData.forEach(row => {
+        if (row && row.Started) {
+            const startedMs = parseDateToMs(row.Started);
+            // Jeśli awaria wydarzyła się w ciągu ostatnich 24 godzin od teraz
+            if (now - startedMs <= twentyFourHoursInMs && startedMs > 0) {
+                recentErrorsCount++;
+            }
+        }
+    });
+
+    document.getElementById('err-stat-today').innerText = recentErrorsCount;
+}
+
+function renderErrorsCharts() {
+    // --- WYKRES 1: Ilość błędów w danym dniu ---
+    const errorsByDay = {};
+    globalRawErrorsData.forEach(row => {
+        if (row && row.Started) {
+            // Wyciągnięcie samej daty (RRRR-MM-DD) z ciągu znaków
+            const datePart = row.Started.split(' ')[0] || row.Started.split('T')[0];
+            if (datePart) {
+                errorsByDay[datePart] = (errorsByDay[datePart] || 0) + 1;
+            }
+        }
+    });
+
+    const sortedDays = Object.keys(errorsByDay).sort();
+    const countsByDay = sortedDays.map(day => errorsByDay[day]);
+
+    const traceDay = {
+        x: sortedDays,
+        y: countsByDay,
+        type: 'bar',
+        marker: { color: '#ef4444' },
+        name: 'Issues'
+    };
+
+    const layoutDay = {
+        title: { text: '<b>Amount of issues per day</b>', font: { size: 15 } },
+        xaxis: { title: 'Date', tickangle: -45, type: 'category' },
+        yaxis: { title: 'Amount of issues', dtick: 1 },
+        margin: { b: 80, t: 50 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('chart-errors-by-day', [traceDay], layoutDay, {responsive: true});
+
+    // --- WYKRES 2: Jakie flow się wysypało (Częstotliwość) ---
+    const errorsByFlow = {};
+    globalRawErrorsData.forEach(row => {
+        if (row && row.Flow) {
+            errorsByFlow[row.Flow] = (errorsByFlow[row.Flow] || 0) + 1;
+        }
+    });
+
+    // Sortowanie od najbardziej awaryjnych (Top 10 dla czytelności na wykresie)
+    const sortedFlows = Object.keys(errorsByFlow).sort((a, b) => errorsByFlow[b] - errorsByFlow[a]).slice(0, 10);
+    const countsByFlow = sortedFlows.map(flow => errorsByFlow[flow]);
+
+    const traceFlow = {
+        x: countsByFlow,
+        y: sortedFlows,
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#f59e0b' }
+    };
+
+    const layoutFlow = {
+        title: { text: '<b>Top 10 most failure flows</b>', font: { size: 15 } },
+        xaxis: { title: 'Amount of issues', dtick: 1 },
+        yaxis: { automargin: true, autoresize: true },
+        margin: { t: 50, l: 150 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        transforms: [{ type: 'sort', target: 'x', order: 'ascending' }]
+    };
+
+    Plotly.newPlot('chart-errors-by-flow', [traceFlow], layoutFlow, {responsive: true});
+}
+
+function renderErrorsTable() {
+    const tbody = document.getElementById('errors-table-body');
+    tbody.innerHTML = '';
+
+    const totalItems = filteredErrorsData.length;
+    const totalPages = Math.ceil(totalItems / ERRORS_PAGE_SIZE) || 1;
+
+    if (ERRORS_CURRENT_PAGE > totalPages) {
+        ERRORS_CURRENT_PAGE = totalPages;
+    }
+
+    const startIndex = (ERRORS_CURRENT_PAGE - 1) * ERRORS_PAGE_SIZE;
+    const endIndex = Math.min(startIndex + ERRORS_PAGE_SIZE, totalItems);
+    const pageData = filteredErrorsData.slice(startIndex, endIndex);
+
+    if (pageData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:30px;">No data regarding cryteria.</td></tr>`;
+        document.getElementById('err-pagination-info').innerText = `Showing 0-0 z 0`;
+        document.getElementById('err-prev-page-btn').disabled = true;
+        document.getElementById('err-next-page-btn').disabled = true;
+        return;
+    }
+
+    pageData.forEach(row => {
+        const isActive = !row.Recovered || row.Recovered.trim() === '' || row.Recovered === 'ACTIVE' || row.Status === 'DOWN';
+        const rowStyle = isActive ? 'style="background-color: #fef2f2;"' : ''; // UX: Delikatna czerwień dla aktywnych błędów
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight: bold; color: ${isActive ? 'var(--major)' : 'var(--success)'}">
+                ${isActive ? '🔴 DOWN' : '🟢 RECOVERED'}
+            </td>
+            <td><b>${row.Flow || '-'}</b></td>
+            <td>${row.Started || '-'}</td>
+            <td>${row.Recovered || 'ACTIVE'}</td>
+            <td><span style="padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; background: #e2e8f0; font-weight:500;">${row.Status || '-'}</span></td>
+        `;
+        if (isActive) {
+            tr.style.backgroundColor = '#fef2f2';
+        }
+        tbody.appendChild(tr);
+    });
+
+    // Aktualizacja stanu paginacji
+    document.getElementById('err-pagination-info').innerText = `Showing ${totalItems === 0 ? 0 : startIndex + 1}-${endIndex} from ${totalItems}`;
+    document.getElementById('err-prev-page-btn').disabled = ERRORS_CURRENT_PAGE === 1;
+    document.getElementById('err-next-page-btn').disabled = ERRORS_CURRENT_PAGE === totalPages;
+}
+
+function changeErrorsPage(direction) {
+    ERRORS_CURRENT_PAGE += direction;
+    renderErrorsTable();
+}
+
+function onErrorsFilterChange() {
+    ERRORS_CURRENT_PAGE = 1;
+    applyErrorsFiltersAndRender();
+}
+
+function resetErrorsFilters() {
+    document.getElementById('err-search-flow').value = '';
+    document.getElementById('err-filter-status').value = 'ALL';
+    onErrorsFilterChange();
+}
+
+function scrollToMonitoring() {
+
+    const el =
+        document.getElementById('n8nMonitoringSection');
+
+    if (!el) return;
+
+    el.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+    });
+}
+
+setInterval(() => {
+
+    refreshDashboardData();
+
+}, 600000);
+
+</script> 
+
+</body> 
+</html>
